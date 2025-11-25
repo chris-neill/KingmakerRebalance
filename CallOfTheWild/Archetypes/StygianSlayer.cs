@@ -46,6 +46,7 @@ using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
 using Kingmaker.UnitLogic.Parts;
 using Kingmaker.Utility;
+using RewiredConsts;
 using static Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic;
 using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 
@@ -53,109 +54,177 @@ namespace CallOfTheWild.Archetypes
 {
     public class StygianSlayer
     {
-        static public BlueprintArchetype archetype;
-        static public BlueprintFeature spellcasting;
-        static public BlueprintFeature proficiencies;
-        static public BlueprintSpellbook spellbook;
+        public static BlueprintArchetype archetype;
+        public static BlueprintFeature invisibility;
+        public static BlueprintFeature mist_form;
+        public static BlueprintFeature proficiencies;
+        public static BlueprintSpellbook spellbook;
 
         static LibraryScriptableObject library => Main.library;
 
         internal static void create()
         {
-            var slayer_class = ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>("c75e0971973957d4dbad24bc7957e4fb");
+            var slayer_class = ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                "c75e0971973957d4dbad24bc7957e4fb"
+            );
 
             archetype = Helpers.Create<BlueprintArchetype>(a =>
             {
                 a.name = "StygianSlayerArchetype";
                 a.LocalizedName = Helpers.CreateString($"{a.name}.Name", "Stygian Slayer");
-                a.LocalizedDescription = Helpers.CreateString($"{a.name}.Description", "A stygian slayer crawls out of the darkest shadows to strike fear into the hearts of civilized folk. He’s a merciless killer who can control a sliver of magic, allowing him to arrive unseen, commit murder, and depart without detection.");
+                a.LocalizedDescription = Helpers.CreateString(
+                    $"{a.name}.Description",
+                    "A stygian slayer crawls out of the darkest shadows to strike fear into the hearts of civilized folk. He’s a merciless killer who can control a sliver of magic, allowing him to arrive unseen, commit murder, and depart without detection."
+                );
             });
             Helpers.SetField(archetype, "m_ParentClass", slayer_class);
             library.AddAsset(archetype, "");
 
-            var slayer_talent2 = library.Get<BlueprintFeatureSelection>("04430ad24988baa4daa0bcd4f1c7d118");
-            var slayer_talent6 = library.Get<BlueprintFeatureSelection>("43d1b15873e926848be2abf0ea3ad9a8");
-            var slayer_talent10 = library.Get<BlueprintFeatureSelection>("913b9cf25c9536949b43a2651b7ffb66");
-            var slayer_proficiencies = library.Get<BlueprintFeature>("41cd5ff7ad1bc5848906e050b06d02dc");
-            var simple_proficiency = library.Get<BlueprintFeature>("e70ecf1ed95ca2f40b754f1adb22bbdd");
-            var martial_proficiency = library.Get<BlueprintFeature>("203992ef5b35c864390b4e4a1e200629");
-            var light_armor_proficiency = library.Get<BlueprintFeature>("6d3728d4e9c9898458fe5e9532951132");
-            var proficiencies = library.CopyAndAdd(slayer_proficiencies, "StygianSlayerProficiencies", "");
-            proficiencies.ReplaceComponent<AddFacts>(a => a.Facts = new BlueprintUnitFact[] { light_armor_proficiency, simple_proficiency, martial_proficiency });
-            proficiencies.SetNameDescription("Stygian Slayer Proficiencies", 
-                                             "A stygian slayer is proficient with light armor, but not with medium armor, heavy armor, or any kind of shield (including tower shields).");
+            var slayer_talent2 = library.Get<BlueprintFeatureSelection>(
+                "04430ad24988baa4daa0bcd4f1c7d118"
+            );
+            var slayer_talent6 = library.Get<BlueprintFeatureSelection>(
+                "43d1b15873e926848be2abf0ea3ad9a8"
+            );
+            var slayer_talent10 = library.Get<BlueprintFeatureSelection>(
+                "913b9cf25c9536949b43a2651b7ffb66"
+            );
+            var slayer_proficiencies = library.Get<BlueprintFeature>(
+                "41cd5ff7ad1bc5848906e050b06d02dc"
+            );
+            var proficiencies = library.CopyAndAdd<BlueprintFeature>(
+                "33e2a7e4ad9daa54eaf808e1483bb43c",
+                "StygianSlayerProficiencies",
+                ""
+            );
+            proficiencies.AddComponents(
+                library.Get<BlueprintFeature>("203992ef5b35c864390b4e4a1e200629").CreateAddFact()
+            );
+            proficiencies.SetNameDescription(
+                "Stygian Slayer Proficiencies",
+                "A stygian slayer is proficient with light armor, but not with medium armor, heavy armor, or any kind of shield (including tower shields)."
+            );
 
-            createSpellcasting();
-            archetype.RemoveFeatures = new LevelEntry[] {Helpers.LevelEntry(1, slayer_proficiencies),
-                                                          Helpers.LevelEntry(4, slayer_talent2),
-                                                          Helpers.LevelEntry(10, slayer_talent10),
-                                                          Helpers.LevelEntry(16, slayer_talent10)
-                                                        };
+            createInvisibility();
+            createMistForm();
 
+            archetype.RemoveFeatures = new LevelEntry[]
+            {
+                Helpers.LevelEntry(1, slayer_proficiencies),
+                Helpers.LevelEntry(4, slayer_talent2),
+                Helpers.LevelEntry(10, slayer_talent10),
+            };
 
-            archetype.AddFeatures = new LevelEntry[] { Helpers.LevelEntry(1, proficiencies),
-                                                       Helpers.LevelEntry(4, spellcasting),
-                                                    };
-            archetype.ChangeCasterType = true;
-            archetype.IsArcaneCaster = true;
-            archetype.ReplaceSpellbook = spellbook;
-            slayer_class.Progression.UIDeterminatorsGroup.AddToArray(proficiencies);
-            //slayer_class.Progression.UIDeterminatorsGroup.AddToArray(spellcasting);
+            archetype.AddFeatures = new LevelEntry[]
+            {
+                Helpers.LevelEntry(1, proficiencies),
+                Helpers.LevelEntry(4, invisibility),
+                Helpers.LevelEntry(10, mist_form),
+            };
+
+            slayer_class.Progression.UIDeterminatorsGroup[0] = proficiencies;
+            slayer_class.Progression.UIGroups[0].Features.Add(invisibility);
+            slayer_class.Progression.UIGroups[0].Features.Add(mist_form);
             slayer_class.Archetypes = slayer_class.Archetypes.AddToArray(archetype);
-
-            addToPrestigeClasses();
         }
 
-
-
-        static void addToPrestigeClasses()
+        static void createInvisibility()
         {
-            Common.addReplaceSpellbook(Common.EldritchKnightSpellbookSelection, spellbook, "EldritchKnightStygianSlayer",
-                                        Common.createPrerequisiteClassSpellLevel(archetype.GetParentClass(), 3));
-            Common.addReplaceSpellbook(Common.ArcaneTricksterSelection, spellbook, "ArcaneTricksterStygianSlayer",
-                                        Common.createPrerequisiteClassSpellLevel(archetype.GetParentClass(), 2));
-            Common.addReplaceSpellbook(Common.MysticTheurgeArcaneSpellbookSelection, spellbook, "MysticTheurgeStygianSlayer",
-                                        Common.createPrerequisiteClassSpellLevel(archetype.GetParentClass(), 2));
+            var slayer_array = new BlueprintCharacterClass[] { archetype.GetParentClass() };
+            BlueprintAbilityResource resource = Helpers.CreateAbilityResource(
+                "StygianSlayerInvisibilityResource",
+                "",
+                "",
+                "",
+                null
+            );
+            resource.SetIncreasedByLevelStartPlusDivStep(1, 4, 0, 4, 1, 0, 0f, slayer_array);
+
+            var invisibility_buff = library.Get<BlueprintBuff>("525f980cb29bc2240b93e953974cb325");
+
+            var apply_invisibility = Common.createContextActionApplyBuff(
+                invisibility_buff,
+                Helpers.CreateContextDuration(Helpers.CreateContextValue(AbilityRankType.Default)),
+                dispellable: false
+            );
+
+            var ability = Helpers.CreateAbility(
+                "StygianSlayerInvisibilityAbility",
+                "Invisibility",
+                "At 4th level, a stygian slayer can cast invisibility once per day, using his slayer level as his caster level. The slayer uses his Intelligence modifier for concentration checks when using this ability. The slayer can use this an additional time per day at 8th level and every 4 levels thereafter.",
+                "",
+                invisibility_buff.Icon,
+                AbilityType.Spell,
+                CommandType.Standard,
+                AbilityRange.Personal,
+                Helpers.roundsPerLevelDuration,
+                "",
+                Helpers.CreateRunActions(apply_invisibility),
+                Helpers.CreateContextRankConfig(
+                    ContextRankBaseValueType.ClassLevel,
+                    classes: slayer_array,
+                    progression: ContextRankProgression.AsIs
+                ),
+                resource.CreateResourceLogic()
+            );
+            ability.setMiscAbilityParametersSelfOnly();
+
+            invisibility = Common.AbilityToFeature(ability, false);
+            invisibility.AddComponent(Helpers.CreateAddAbilityResource(resource));
         }
 
-
-        static void createSpellcasting()
+        static void createMistForm()
         {
-            var wizard = library.Get<BlueprintCharacterClass>("ba34257984f4c41408ce1dc2004e342e");
-            spellbook = library.CopyAndAdd<BlueprintSpellbook>("762858a4a28eaaf43aa00f50441d7027", "StygianSlayerSpellbook", "");//ranger spellbook
-            spellbook.IsArcane = true;
-            spellbook.CharacterClass = archetype.GetParentClass();
-            spellbook.Name = Helpers.CreateString("StygianSlayerSpellbook.Name", archetype.Name);
-            spellbook.AllSpellsKnown = false;
-            spellbook.CanCopyScrolls = true;
-            spellbook.CastingAttribute = StatType.Intelligence;
+            var slayer_array = new BlueprintCharacterClass[] { archetype.GetParentClass() };
+            var resource = Helpers.CreateAbilityResource(
+                "StygianSlayerMistFormResource",
+                "",
+                "",
+                "",
+                null
+            );
+            resource.SetIncreasedByLevel(0, 1, slayer_array);
 
-            spellbook.SpellList = Common.combineSpellLists("StygianSlayerSpelllist",
-                                                           (spell, spelllist, lvl) =>
-                                                           {
-                                                               return lvl <= 4 && lvl > 0
-                                                                      && (spell.School == SpellSchool.Illusion
-                                                                          || spell == NewSpells.obscuring_mist
-                                                                          || spell == NewSpells.barrow_haze
-                                                                          );
-                                                           },
-                                                           wizard.Spellbook.SpellList);
+            var buff = library.CopyAndAdd<BlueprintBuff>(
+                "e82c0ec9a87a8514ba34fad5926ef129",
+                "StygianSlayerMistFormBuff",
+                ""
+            );
+            buff.AddComponent(Common.createAddOutgoingGhost());
+            buff.AddComponent(
+                Helpers.Create<AddConditionImmunity>(a =>
+                    a.Condition = UnitCondition.DifficultTerrain
+                )
+            );
+            buff.SetNameDescription(
+                "Shadowy Mist Form",
+                "At 10th level, a stygian slayer can transform into an inky black cloud of mist that functions as incorporeal form. The slayer can use this ability for a number of minutes per day equal to his level. These minutes need not be consecutive, but must be used in 1-minute increments."
+            );
 
-            spellcasting = Helpers.CreateFeature("StygianSlayerSpellcasting",
-                                                 "Spell Use",
-                                                 "Beginning at 4th level, a stygian slayer gains the ability to cast a small number of arcane spells. He can only cast wizard spells of the illusion school of spell level 1 through 4th, obscuring mist and barrow haze. A stygian slayer must choose and prepare his spells in advance.\n"
-                                                 + "To prepare or cast a spell, a stygian slayer must have an Intelligence score equal to at least 10 + the spell level. The Difficulty Class for a saving throw against a stygian slayer’s spell is 10 + the spell level + the stygian slayer’s Intelligence modifier.\n"
-                                                 + "A stygian slayer can cast only a certain number of spells of each spell level per day. Her base daily spell allotment is the same as the ranger class.\n"
-                                                 + "Through 3rd level, a stygian slayer has no caster level. At 4th level and higher, his caster level is equal to his stygian slayer level – 3.\n"
-                                                 + "Stygian slayer learns, prepares, and casts spells exactly as a wizard does, but does not gain additional spells known each time he gains a slayer level with this archetype.\n"
-                                                 + "A stygian slayer can cast his spells while wearing light armor without incurring the normal arcane spell failure chance. Like any other arcane spellcaster, a stygian slayer wearing medium or heavy armor or using a shield incurs a chance of arcane spell failure if the spell in question has a somatic component.",
-                                                 "",
-                                                 Helpers.GetIcon("55edf82380a1c8540af6c6037d34f322"),
-                                                 FeatureGroup.None,
-                                                 Common.createArcaneArmorProficiency(ArmorProficiencyGroup.Light)
-                                                 );
+            var ability = Helpers.CreateAbility(
+                "StygianSlayerMistFormAbility",
+                buff.Name,
+                buff.Description,
+                "",
+                buff.Icon,
+                AbilityType.Supernatural,
+                CommandType.Swift,
+                AbilityRange.Personal,
+                Helpers.oneMinuteDuration,
+                "",
+                Helpers.CreateRunActions(
+                    Common.createContextActionApplyBuff(
+                        buff,
+                        Helpers.CreateContextDuration(1, DurationRate.Minutes),
+                        dispellable: false
+                    )
+                ),
+                resource.CreateResourceLogic()
+            );
+            ability.setMiscAbilityParametersSelfOnly();
+
+            mist_form = Common.AbilityToFeature(ability, false);
+            mist_form.AddComponent(Helpers.CreateAddAbilityResource(resource));
         }
-
     }
 }
-

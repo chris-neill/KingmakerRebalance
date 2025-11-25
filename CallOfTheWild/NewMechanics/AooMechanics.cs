@@ -1,4 +1,9 @@
-﻿using Harmony12;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Harmony12;
 using Kingmaker;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Selection;
@@ -24,11 +29,6 @@ using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.UnitLogic.Parts;
 using Kingmaker.Utility;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CallOfTheWild.AooMechanics
 {
@@ -39,7 +39,6 @@ namespace CallOfTheWild.AooMechanics
             return !buffs.Empty();
         }
     }
-
 
     public class UnitPartAooAgainstAllies : AdditiveUnitPart
     {
@@ -57,7 +56,6 @@ namespace CallOfTheWild.AooMechanics
         }
     }
 
-
     public class UnitPartDoesNotEngage : AdditiveUnitPart
     {
         public bool active()
@@ -74,13 +72,11 @@ namespace CallOfTheWild.AooMechanics
             this.Owner.Ensure<UnitPartDoesNotEngage>().addBuff(this.Fact);
         }
 
-
         public override void OnTurnOff()
         {
             this.Owner.Ensure<UnitPartDoesNotEngage>().removeBuff(this.Fact);
         }
     }
-
 
     [AllowedOn(typeof(BlueprintUnitFact))]
     public class NoAooOnDisengage : OwnedGameLogicComponent<UnitDescriptor>
@@ -90,13 +86,11 @@ namespace CallOfTheWild.AooMechanics
             this.Owner.Ensure<UnitPartNoAooOnDisengage>().addBuff(this.Fact);
         }
 
-
         public override void OnTurnOff()
         {
             this.Owner.Ensure<UnitPartNoAooOnDisengage>().removeBuff(this.Fact);
         }
     }
-
 
     [AllowedOn(typeof(BlueprintUnitFact))]
     public class Spellbreaker : OwnedGameLogicComponent<UnitDescriptor>
@@ -106,13 +100,11 @@ namespace CallOfTheWild.AooMechanics
             this.Owner.Ensure<UnitPartSpellbreaker>().addBuff(this.Fact);
         }
 
-
         public override void OnTurnOff()
         {
             this.Owner.Ensure<UnitPartSpellbreaker>().removeBuff(this.Fact);
         }
     }
-
 
     [AllowedOn(typeof(BlueprintUnitFact))]
     public class AooAgainstAllies : OwnedGameLogicComponent<UnitDescriptor>
@@ -122,14 +114,11 @@ namespace CallOfTheWild.AooMechanics
             this.Owner.Ensure<UnitPartAooAgainstAllies>().addBuff(this.Fact);
         }
 
-
         public override void OnTurnOff()
         {
             this.Owner.Ensure<UnitPartAooAgainstAllies>().removeBuff(this.Fact);
         }
     }
-
-
 
     public class UnitPartSpecialAttackOfOportunity : AdditiveUnitPart
     {
@@ -149,16 +138,16 @@ namespace CallOfTheWild.AooMechanics
         }
     }
 
-
     interface IAooSpecial
     {
         bool canMakeAoo(UnitEntityData enemy);
     }
 
-
-
     [AllowedOn(typeof(BlueprintUnitFact))]
-    public class AooWithRangedWeapon : OwnedGameLogicComponent<UnitDescriptor>, IAooSpecial, IUnitSubscriber
+    public class AooWithRangedWeapon
+        : OwnedGameLogicComponent<UnitDescriptor>,
+            IAooSpecial,
+            IUnitSubscriber
     {
         public BlueprintParametrizedFeature required_feature;
         public WeaponCategory[] weapon_categories;
@@ -168,7 +157,6 @@ namespace CallOfTheWild.AooMechanics
         {
             this.Owner.Ensure<UnitPartSpecialAttackOfOportunity>().addBuff(this.Fact);
         }
-
 
         public override void OnTurnOff()
         {
@@ -193,31 +181,40 @@ namespace CallOfTheWild.AooMechanics
                 return false;
             }
 
-            if (required_feature != null
-                && !this.Owner.Progression.Features.Enumerable.Where<Kingmaker.UnitLogic.Feature>(p => p.Blueprint == required_feature).Any(p => p.Param == weapon.Blueprint.Category))
+            if (
+                required_feature != null
+                && !this
+                    .Owner.Progression.Features.Enumerable.Where<Kingmaker.UnitLogic.Feature>(p =>
+                        p.Blueprint == required_feature
+                    )
+                    .Any(p => p.Param == weapon.Blueprint.Category)
+            )
             {
                 return false;
             }
             if (enemy == null)
-            {//to allow checks
+            { //to allow checks
                 return true;
             }
-            return this.Owner.Unit.DistanceTo(enemy) < (double)this.Owner.Unit.View.Corpulence + (double)enemy.View.Corpulence + (double)max_range.Meters && this.Owner.Unit.HasLOS(enemy);
+            return this.Owner.Unit.DistanceTo(enemy)
+                    < (double)this.Owner.Unit.View.Corpulence
+                        + (double)enemy.View.Corpulence
+                        + (double)max_range.Meters
+                && this.Owner.Unit.HasLOS(enemy);
         }
     }
 
-
-
-
     [AllowMultipleComponents]
     [AllowedOn(typeof(BlueprintUnitFact))]
-    public class DoNotProvokeAooOnAoo : RuleInitiatorLogicComponent<RuleAttackRoll>, IRulebookHandler<RuleAttackRoll>, IInitiatorRulebookSubscriber
+    public class DoNotProvokeAooOnAoo
+        : RuleInitiatorLogicComponent<RuleAttackRoll>,
+            IRulebookHandler<RuleAttackRoll>,
+            IInitiatorRulebookSubscriber
     {
         public WeaponCategory[] weapon_categories;
 
         public override void OnEventAboutToTrigger(RuleAttackRoll evt)
         {
-
             var weapon_attack = evt.RuleAttackWithWeapon;
             if (weapon_attack != null && !weapon_attack.IsAttackOfOpportunity)
             {
@@ -228,16 +225,13 @@ namespace CallOfTheWild.AooMechanics
             evt.DoNotProvokeAttacksOfOpportunity = true;
         }
 
-        public override void OnEventDidTrigger(RuleAttackRoll evt)
-        {
-        }
+        public override void OnEventDidTrigger(RuleAttackRoll evt) { }
     }
-
 
     public class ContextActionProvokeAttackOfOpportunityFromAnyoneExceptCaster : ContextAction
     {
         public int max_units;
-      
+
         public override string GetCaption()
         {
             return "Target provokes AoO";
@@ -246,7 +240,7 @@ namespace CallOfTheWild.AooMechanics
         public override void RunAction()
         {
             int available_units = max_units;
-            UnitEntityData unit =  this.Target.Unit;
+            UnitEntityData unit = this.Target.Unit;
             if (unit == null)
                 UberDebug.LogError((object)"Target is missing", (object[])Array.Empty<object>());
             else
@@ -268,25 +262,29 @@ namespace CallOfTheWild.AooMechanics
         }
     }
 
-
     [AllowMultipleComponents]
     [AllowedOn(typeof(BlueprintUnitFact))]
-    public class DoNotProvokeAoo : RuleInitiatorLogicComponent<RuleAttackRoll>, IRulebookHandler<RuleAttackRoll>, IInitiatorRulebookSubscriber
+    public class DoNotProvokeAoo
+        : RuleInitiatorLogicComponent<RuleAttackRoll>,
+            IRulebookHandler<RuleAttackRoll>,
+            IInitiatorRulebookSubscriber
     {
-
         public override void OnEventAboutToTrigger(RuleAttackRoll evt)
         {
             evt.DoNotProvokeAttacksOfOpportunity = true;
         }
 
-        public override void OnEventDidTrigger(RuleAttackRoll evt)
-        {
-        }
+        public override void OnEventDidTrigger(RuleAttackRoll evt) { }
     }
 
     [AllowMultipleComponents]
     [AllowedOn(typeof(BlueprintUnitFact))]
-    public class AttackDamageBonusOnAoo : RuleInitiatorLogicComponent<RuleAttackRoll>, IRulebookHandler<RuleAttackRoll>, IInitiatorRulebookHandler<RuleDealDamage>, IRulebookHandler<RuleDealDamage>, IInitiatorRulebookSubscriber
+    public class AttackDamageBonusOnAoo
+        : RuleInitiatorLogicComponent<RuleAttackRoll>,
+            IRulebookHandler<RuleAttackRoll>,
+            IInitiatorRulebookHandler<RuleDealDamage>,
+            IRulebookHandler<RuleDealDamage>,
+            IInitiatorRulebookSubscriber
     {
         public WeaponCategory[] weapon_categories;
         public ContextValue value;
@@ -298,7 +296,7 @@ namespace CallOfTheWild.AooMechanics
             {
                 return;
             }
-           
+
             var bonus = value.Calculate(this.Fact.MaybeContext);
             evt.CriticalConfirmationBonus += bonus;
             //evt.AddTemporaryModifier(evt.Target.Stats.AdditionalAttackBonus.AddModifier(bonus, (GameLogicComponent)this, ModifierDescriptor.UntypedStackable));
@@ -334,16 +332,10 @@ namespace CallOfTheWild.AooMechanics
             evt.DamageBundle.WeaponDamage?.AddBonus(bonus);
         }
 
-        public override void OnEventDidTrigger(RuleAttackRoll evt)
-        {
-        }
+        public override void OnEventDidTrigger(RuleAttackRoll evt) { }
 
-        public void OnEventDidTrigger(RuleDealDamage evt)
-        {
-            
-        }
+        public void OnEventDidTrigger(RuleDealDamage evt) { }
     }
-
 
     [Harmony12.HarmonyPatch(typeof(UnitEngagementExtension))]
     [Harmony12.HarmonyPatch("IsEngage", Harmony12.MethodType.Normal)]
@@ -354,7 +346,7 @@ namespace CallOfTheWild.AooMechanics
             Main.TraceLog();
             __result = false;
             if (!unit.Descriptor.State.CanAct)
-            {               
+            {
                 return false;
             }
             WeaponSlot threatHand = unit.GetThreatHand();
@@ -371,7 +363,6 @@ namespace CallOfTheWild.AooMechanics
             return false;
         }
     }
-
 
     [Harmony12.HarmonyPatch(typeof(UnitCombatEngagementController))]
     [Harmony12.HarmonyPatch("TickUnit", Harmony12.MethodType.Normal)]
@@ -392,20 +383,17 @@ namespace CallOfTheWild.AooMechanics
         }
     }
 
-
     [Harmony12.HarmonyPatch(typeof(UnitCombatState))]
     [Harmony12.HarmonyPatch("ShouldAttackOnDisengage", Harmony12.MethodType.Normal)]
     class Patch_UnitCombatState__ShouldAttackOnDisengage
     {
         static bool Prefix(UnitCombatState __instance, UnitEntityData target, ref bool __result)
-        {       
+        {
             __result = target?.Get<UnitPartNoAooOnDisengage>() == null;
 
             return __result;
         }
     }
-
-
 
     [Harmony12.HarmonyPatch(typeof(UnitCombatState))]
     [Harmony12.HarmonyPatch("Engage", Harmony12.MethodType.Normal)]
@@ -422,14 +410,19 @@ namespace CallOfTheWild.AooMechanics
     [Harmony12.HarmonyPatch("EngagedBy", Harmony12.MethodType.Getter)]
     class Patch_UnitCombatState_EngagedBy
     {
-        static bool Prefix(UnitCombatState __instance, Dictionary<UnitEntityData, TimeSpan> ___m_EngagedBy, ref Dictionary<UnitEntityData, TimeSpan>.KeyCollection __result)
+        static bool Prefix(
+            UnitCombatState __instance,
+            Dictionary<UnitEntityData, TimeSpan> ___m_EngagedBy,
+            ref Dictionary<UnitEntityData, TimeSpan>.KeyCollection __result
+        )
         {
-            __result = ___m_EngagedBy.Where(kv => !kv.Key.IsAlly(__instance.Unit)).ToDictionary(d => d.Key, d => d.Value).Keys;
+            __result = ___m_EngagedBy
+                .Where(kv => !kv.Key.IsAlly(__instance.Unit))
+                .ToDictionary(d => d.Key, d => d.Value)
+                .Keys;
             return false;
         }
     }
-
-
 
     [Harmony12.HarmonyPatch(typeof(UnitCombatState))]
     [Harmony12.HarmonyPatch("AttackOfOpportunity", Harmony12.MethodType.Normal)]
@@ -438,18 +431,25 @@ namespace CallOfTheWild.AooMechanics
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = instructions.ToList();
-            var check_threat_hand = codes.FindIndex(x => x.opcode == System.Reflection.Emit.OpCodes.Call && x.operand.ToString().Contains("GetThreatHand"));
+            var check_threat_hand = codes.FindIndex(x =>
+                x.opcode == System.Reflection.Emit.OpCodes.Call
+                && x.operand.ToString().Contains("GetThreatHand")
+            );
 
-            codes[check_threat_hand] = new Harmony12.CodeInstruction(System.Reflection.Emit.OpCodes.Ldarg_1);
-            codes.Insert(check_threat_hand + 1, new Harmony12.CodeInstruction(System.Reflection.Emit.OpCodes.Call,
-                                                                           new Func<UnitEntityData, UnitEntityData, WeaponSlot>(canMakeAoo).Method
-                                                                           )
-                        );
+            codes[check_threat_hand] = new Harmony12.CodeInstruction(
+                System.Reflection.Emit.OpCodes.Ldarg_1
+            );
+            codes.Insert(
+                check_threat_hand + 1,
+                new Harmony12.CodeInstruction(
+                    System.Reflection.Emit.OpCodes.Call,
+                    new Func<UnitEntityData, UnitEntityData, WeaponSlot>(canMakeAoo).Method
+                )
+            );
             return codes.AsEnumerable();
         }
 
-
-        static public WeaponSlot canMakeAoo(UnitEntityData unit, UnitEntityData enemy)
+        public static WeaponSlot canMakeAoo(UnitEntityData unit, UnitEntityData enemy)
         {
             Main.TraceLog();
             if (unit == null || enemy == null)
@@ -471,8 +471,6 @@ namespace CallOfTheWild.AooMechanics
         }
     }
 
-
-
     [Harmony12.HarmonyPatch(typeof(UnitAttackOfOpportunity))]
     [Harmony12.HarmonyPatch("Init", Harmony12.MethodType.Normal)]
     class UnitAttackOfOpportunity_Init_Transpiler
@@ -480,16 +478,19 @@ namespace CallOfTheWild.AooMechanics
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = instructions.ToList();
-            var check_threat_hand = codes.FindIndex(x => x.opcode == System.Reflection.Emit.OpCodes.Call && x.operand.ToString().Contains("GetThreatHand"));
+            var check_threat_hand = codes.FindIndex(x =>
+                x.opcode == System.Reflection.Emit.OpCodes.Call
+                && x.operand.ToString().Contains("GetThreatHand")
+            );
 
-            codes[check_threat_hand] = new Harmony12.CodeInstruction(System.Reflection.Emit.OpCodes.Call,
-                                                                           new Func<UnitEntityData, WeaponSlot>(getThreatHand2).Method
-                                                                           );
+            codes[check_threat_hand] = new Harmony12.CodeInstruction(
+                System.Reflection.Emit.OpCodes.Call,
+                new Func<UnitEntityData, WeaponSlot>(getThreatHand2).Method
+            );
             return codes.AsEnumerable();
         }
 
-
-        static public WeaponSlot getThreatHand2(UnitEntityData unit)
+        public static WeaponSlot getThreatHand2(UnitEntityData unit)
         {
             Main.TraceLog();
             if (unit == null)
@@ -511,27 +512,30 @@ namespace CallOfTheWild.AooMechanics
         }
     }
 
-
-    public class ApplyActionToCasterAndMakeAttackOfOpportunityOnAttack : RuleTargetLogicComponent<RuleAttackWithWeapon>
+    public class ApplyActionToCasterAndMakeAttackOfOpportunityOnAttack
+        : RuleTargetLogicComponent<RuleAttackWithWeapon>
     {
         public BlueprintAbilityResource required_resource;
         public bool consume_swift_action;
         public int resource_amount = 1;
         public ActionList actions;
 
-        public override void OnEventAboutToTrigger(RuleAttackWithWeapon evt)
-        {
-
-        }
+        public override void OnEventAboutToTrigger(RuleAttackWithWeapon evt) { }
 
         public override void OnEventDidTrigger(RuleAttackWithWeapon evt)
         {
-            if (this.Owner.Unit.CombatState.AttackOfOpportunityCount <= 0 )
+            if (
+                evt.MeleeDamage.Damage == 0
+                || this.Owner.Unit.CombatState.AttackOfOpportunityCount <= 0
+            )
             {
                 return;
             }
 
-            if (required_resource != null && this.Owner.Resources.GetResourceAmount(required_resource) < resource_amount)
+            if (
+                required_resource != null
+                && this.Owner.Resources.GetResourceAmount(required_resource) < resource_amount
+            )
             {
                 return;
             }
@@ -548,31 +552,44 @@ namespace CallOfTheWild.AooMechanics
 
             this.Owner.Resources.Spend(required_resource, resource_amount);
             (this.Fact as IFactContextOwner).RunActionInContext(actions, this.Owner.Unit);
-            Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(this.Owner.Unit, evt.Initiator);          
+            Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(
+                this.Owner.Unit,
+                evt.Initiator
+            );
         }
     }
 
-
     [AllowedOn(typeof(BlueprintUnitFact))]
     [AllowMultipleComponents]
-    public class OpportunistMultipleAttacks : OwnedGameLogicComponent<UnitDescriptor>, IGlobalRulebookHandler<RuleDealDamage>, IRulebookHandler<RuleDealDamage>, IGlobalRulebookSubscriber
+    public class OpportunistMultipleAttacks
+        : OwnedGameLogicComponent<UnitDescriptor>,
+            IGlobalRulebookHandler<RuleDealDamage>,
+            IRulebookHandler<RuleDealDamage>,
+            IGlobalRulebookSubscriber
     {
         [JsonProperty]
         private TimeSpan m_LastUseTime;
+
         [JsonProperty]
         private int extra_attacks_used = 0;
 
         public ContextValue num_extra_attacks;
 
-        public void OnEventAboutToTrigger(RuleDealDamage evt)
-        {
-
-        }
+        public void OnEventAboutToTrigger(RuleDealDamage evt) { }
 
         public void OnEventDidTrigger(RuleDealDamage evt)
         {
             ItemEntityWeapon weapon = evt.DamageBundle.Weapon;
-            if (evt.Initiator == this.Owner.Unit || weapon == null || (!weapon.Blueprint.IsMelee || !this.Owner.Unit.CombatState.EngagedUnits.Contains<UnitEntityData>(evt.Target)))
+            if (
+                evt.Initiator == this.Owner.Unit
+                || weapon == null
+                || (
+                    !weapon.Blueprint.IsMelee
+                    || !this.Owner.Unit.CombatState.EngagedUnits.Contains<UnitEntityData>(
+                        evt.Target
+                    )
+                )
+            )
                 return;
             int max_extra_attacks = num_extra_attacks.Calculate(this.Fact.MaybeContext);
             if (this.m_LastUseTime + 1.Rounds().Seconds > Game.Instance.TimeController.GameTime)
@@ -584,7 +601,7 @@ namespace CallOfTheWild.AooMechanics
                 else
                 {
                     return;
-                }   
+                }
             }
             else
             {
@@ -592,14 +609,16 @@ namespace CallOfTheWild.AooMechanics
                 extra_attacks_used = 0;
             }
 
-            Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(this.Owner.Unit, evt.Target);           
+            Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(
+                this.Owner.Unit,
+                evt.Target
+            );
         }
     }
 
-
     [Harmony12.HarmonyPatch(typeof(MagusController))]
     [Harmony12.HarmonyPatch("OnEventDidTrigger", Harmony12.MethodType.Normal)]
-    [Harmony12.HarmonyPatch(new Type[] { typeof(RuleCheckCastingDefensively)})]
+    [Harmony12.HarmonyPatch(new Type[] { typeof(RuleCheckCastingDefensively) })]
     class Patch_MagusController__Spellbreaker
     {
         static bool Prefix(MagusController __instance, RuleCheckCastingDefensively evt)
@@ -611,19 +630,20 @@ namespace CallOfTheWild.AooMechanics
                 UnitPartMagus unitPartMagus = attacker.Get<UnitPartMagus>();
                 if (unitPartMagus != null && (bool)unitPartMagus.Counterstrike)
                 {
-                    Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(attacker, evt.Initiator);
+                    Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(
+                        attacker,
+                        evt.Initiator
+                    );
                 }
                 else if ((attacker.Get<UnitPartSpellbreaker>()?.active()).GetValueOrDefault())
                 {
-                    Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(attacker, evt.Initiator);
+                    Game.Instance.CombatEngagementController.ForceAttackOfOpportunity(
+                        attacker,
+                        evt.Initiator
+                    );
                 }
             }
             return false;
         }
     }
-
-
-
-
-
 }

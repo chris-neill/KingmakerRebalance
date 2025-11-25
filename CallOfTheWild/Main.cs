@@ -1,20 +1,23 @@
-﻿using UnityModManagerNet;
-using System;
-using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using Kingmaker.Blueprints;
+using System.Reflection;
+using Harmony12;
 using Kingmaker;
+using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
+using Kingmaker.Blueprints.Items;
+using Kingmaker.Designers.Mechanics.Buffs;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
+using Kingmaker.UnitLogic.Class.LevelUp;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics.Components;
-using Kingmaker.UnitLogic.Buffs.Blueprints;
-using Kingmaker.Designers.Mechanics.Buffs;
-using System.Collections.Generic;
-using Kingmaker.Blueprints.Items;
+using Kingmaker.Visual.Animation.Kingmaker;
+using Kingmaker.Visual.Animation.Kingmaker.Actions;
 using Newtonsoft.Json;
-using System.IO;
 using Newtonsoft.Json.Linq;
-using Kingmaker.UnitLogic.Class.LevelUp;
+using UnityModManagerNet;
 
 namespace CallOfTheWild
 {
@@ -40,10 +43,14 @@ namespace CallOfTheWild
             public bool balance_fixes { get; }
             public bool balance_fixes_monk_ac { get; }
             public bool insightful_contemplation_forbids_attack { get; }
+
             internal Settings()
             {
-
-                using (StreamReader settings_file = File.OpenText(UnityModManager.modsPath + @"/CallOfTheWild/settings.json"))
+                using (
+                    StreamReader settings_file = File.OpenText(
+                        UnityModManager.modsPath + @"/CallOfTheWild/settings.json"
+                    )
+                )
                 using (JsonTextReader reader = new JsonTextReader(settings_file))
                 {
                     JObject jo = (JObject)JToken.ReadFrom(reader);
@@ -52,24 +59,29 @@ namespace CallOfTheWild
                     reduce_skill_points = (bool)jo["reduce_skill_points"];
                     sacred_huntsmaster_animal_focus = (bool)jo["sacred_huntsmaster_animal_focus"];
                     swap_weapon_sets_as_move_action = (bool)jo["swap_weapon_sets_as_move_action"];
-                    allow_spellcasting_in_elemental_form = (bool)jo["allow_spellcasting_in_elemental_form"];
+                    allow_spellcasting_in_elemental_form = (bool)
+                        jo["allow_spellcasting_in_elemental_form"];
                     fix_teamwork_feats = (bool)jo["fix_teamwork_feats"];
                     fix_ecclesitheurge_class = (bool)jo["fix_ecclesitheurge_class"];
                     advanced_fighter_options = (bool)jo["advanced_fighter_options"];
                     wizard_discoveries = (bool)jo["wizard_discoveries"];
                     secondary_rake_attacks = (bool)jo["secondary_rake_attacks"];
-                    one_sneak_attack_per_target_per_spell = (bool)jo["one_sneak_attack_per_target_per_spell"];
-                    metamagic_for_spontaneous_spell_conversion = (bool)jo["metamagic_for_spontaneous_spell_conversion"];
-                    remove_solo_tactics_from_sacred_huntsmaster = (bool)jo["remove_solo_tactics_from_sacred_huntsmaster"];
+                    one_sneak_attack_per_target_per_spell = (bool)
+                        jo["one_sneak_attack_per_target_per_spell"];
+                    metamagic_for_spontaneous_spell_conversion = (bool)
+                        jo["metamagic_for_spontaneous_spell_conversion"];
+                    remove_solo_tactics_from_sacred_huntsmaster = (bool)
+                        jo["remove_solo_tactics_from_sacred_huntsmaster"];
                     update_kineticist_archetypes = (bool)jo["update_kineticist_archetypes"];
                     balance_fixes = (bool)jo["balance_fixes"];
                     balance_fixes_monk_ac = (bool)jo["balance_fixes_monk_ac"];
-                    insightful_contemplation_forbids_attack = (bool)jo["insightful_contemplation_forbids_attack"];
+                    insightful_contemplation_forbids_attack = (bool)
+                        jo["insightful_contemplation_forbids_attack"];
                 }
             }
         }
 
-        static public Settings settings = new Settings();
+        public static Settings settings = new Settings();
         internal static UnityModManagerNet.UnityModManager.ModEntry.ModLogger logger;
         internal static Harmony12.HarmonyInstance harmony;
         public static LibraryScriptableObject library;
@@ -85,7 +97,6 @@ namespace CallOfTheWild
                 logger.Log(msg);
         }
 
-
         [System.Diagnostics.Conditional("DEBUG")]
         internal static void TraceLog()
         {
@@ -97,9 +108,12 @@ namespace CallOfTheWild
 
         internal static void DebugError(Exception ex)
         {
-            if (logger != null) logger.Log(ex.ToString() + "\n" + ex.StackTrace);
+            if (logger != null)
+                logger.Log(ex.ToString() + "\n" + ex.StackTrace);
         }
+
         internal static bool enabled;
+
         static bool Load(UnityModManager.ModEntry modEntry)
         {
             try
@@ -121,6 +135,7 @@ namespace CallOfTheWild
             }
             return true;
         }
+
         [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary")]
         [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
         static class LibraryScriptableObject_LoadDictionary_Patch
@@ -128,19 +143,24 @@ namespace CallOfTheWild
             static void Postfix(LibraryScriptableObject __instance)
             {
                 var self = __instance;
-                if (Main.library != null) return;
+                if (Main.library != null)
+                    return;
                 Main.library = self;
                 try
                 {
                     Main.DebugLog("Loading Call of the Wild");
                     CallOfTheWild.HarmlessSaves.HarmlessSaves.init();
-                    CallOfTheWild.LoadIcons.Image2Sprite.icons_folder = UnityModManager.modsPath + @"/CallOfTheWild/Icons/";
-#if DEBUG                
+                    CallOfTheWild.LoadIcons.Image2Sprite.icons_folder =
+                        UnityModManager.modsPath + @"/CallOfTheWild/Icons/";
+#if DEBUG
                     bool allow_guid_generation = true;
 #else
                     bool allow_guid_generation = false; //no guids should be ever generated in release
 #endif
-                    CallOfTheWild.Helpers.GuidStorage.load(CallOfTheWild.Properties.Resources.blueprints, allow_guid_generation);
+                    CallOfTheWild.Helpers.GuidStorage.load(
+                        CallOfTheWild.Properties.Resources.blueprints,
+                        allow_guid_generation
+                    );
                     CallOfTheWild.Helpers.Load();
                     CallOfTheWild.ArmorEnchantments.initialize();
                     CallOfTheWild.WeaponEnchantments.initialize();
@@ -165,7 +185,6 @@ namespace CallOfTheWild
                         Main.logger.Log("Fixing Ecclesitheurge");
                         CallOfTheWild.Rebalance.fixEcclesitheurge();
                     }
-
 
                     if (settings.remove_solo_tactics_from_sacred_huntsmaster)
                     {
@@ -215,15 +234,16 @@ namespace CallOfTheWild
                     if (settings.balance_fixes)
                     {
                         Main.logger.Log("Applying balance changes");
-                        CallOfTheWild.BalanceFixes.load("979f63920af22344d81da5099c9ec32e", //death domain bleed
-                                                        "ad9a6a7ee08ce73469dff703a17f8934", //medium elemental burn
-                                                        "7d0f50b37b787ea4d8f5a09dd2f30a4e" //mirrow bow damage 
-                                                         );
+                        CallOfTheWild.BalanceFixes.load(
+                            "979f63920af22344d81da5099c9ec32e", //death domain bleed
+                            "ad9a6a7ee08ce73469dff703a17f8934", //medium elemental burn
+                            "7d0f50b37b787ea4d8f5a09dd2f30a4e" //mirrow bow damage
+                        );
                     }
                     CallOfTheWild.Rebalance.fixDomainSpells();
                     CallOfTheWild.Rebalance.fixAnimalCompanionFeats();
                     CallOfTheWild.Rebalance.fixAlchemistFastBombs();
-                    
+
                     CallOfTheWild.Rebalance.fixElementalWallsToAvoidDealingDamageTwiceOnTheFirstRound();
                     CallOfTheWild.Rebalance.fixArchonsAuraToEffectOnlyEnemiesAndDescription();
                     CallOfTheWild.Rebalance.fixDruidDomainUi();
@@ -292,7 +312,7 @@ namespace CallOfTheWild
                     CallOfTheWild.Rebalance.fixFlameWardenSpells();
                     CallOfTheWild.NewFeats.createDisruptive();
                     CallOfTheWild.NewFeats.createSpellbreaker();
-                    CallOfTheWild.NewRagePowers.load();   
+                    CallOfTheWild.NewRagePowers.load();
                     CallOfTheWild.Subdomains.load();
                     CallOfTheWild.NewFeats.createDeityFavoredWeapon();
                     CallOfTheWild.Rebalance.clericAndDruidOfErastilGetShortbowProficiency();
@@ -330,7 +350,9 @@ namespace CallOfTheWild
 
                     if (settings.sacred_huntsmaster_animal_focus)
                     {
-                        Main.logger.Log("Replacing Sacred Huntsmaster favored enemy with animal focus.");
+                        Main.logger.Log(
+                            "Replacing Sacred Huntsmaster favored enemy with animal focus."
+                        );
                         CallOfTheWild.Hunter.addAnimalFocusSH();
                     }
                     CallOfTheWild.KineticistFix.load(Main.settings.update_kineticist_archetypes);
@@ -339,7 +361,7 @@ namespace CallOfTheWild
                     CallOfTheWild.Skald.createSkaldClass();
                     CallOfTheWild.Archetypes.RavenerHunter.create();
                     CallOfTheWild.Oracle.createOracleClass();
-                    
+
                     CallOfTheWild.Investigator.createInvestigatorClass();
                     CallOfTheWild.Spiritualist.createSpiritualistClass();
 
@@ -353,11 +375,11 @@ namespace CallOfTheWild
                     CallOfTheWild.Bloodrager.createBloodragerClass();
                     CallOfTheWild.BloodlinesFix.load(); //sorcerer archetypes with alternate bloodlines are created inside
 
-                    CallOfTheWild.Arcanist.createArcanistClass();                    
+                    CallOfTheWild.Arcanist.createArcanistClass();
                     CallOfTheWild.Archetypes.DrillSergeant.create();
                     CallOfTheWild.Archetypes.PackRager.create();
                     CallOfTheWild.Archetypes.DivineScourge.create();
-                                      
+
                     CallOfTheWild.Archetypes.DivineTracker.create(); // blessings will be filled in warpriest part
                     CallOfTheWild.Warpriest.createWarpriestClass();
 
@@ -384,11 +406,13 @@ namespace CallOfTheWild
                         CallOfTheWild.AdvancedFighterOptions.prepareLookupData();
                     }
                     CallOfTheWild.MonkKiPowers.load();
+
+                    CallOfTheWild.Stalker.createClass();
                     CallOfTheWild.StyleStrikes.load();
-                    
+
                     CallOfTheWild.Archetypes.SpiritWhisperer.create();
                     CallOfTheWild.Archetypes.UntamedRager.create();
-                    CallOfTheWild.Archetypes.NatureBondedMagus.create();                    
+                    CallOfTheWild.Archetypes.NatureBondedMagus.create();
                     CallOfTheWild.Archetypes.ZenArcher.create();
                     CallOfTheWild.Archetypes.SageCounselor.create();
                     CallOfTheWild.Rebalance.fixKiPoolExtraAttacks(); //should be run after zen archer and counselor to properly account for keeping/removing extra attacks
@@ -408,11 +432,11 @@ namespace CallOfTheWild
                     CallOfTheWild.Hinterlander.createHinterlanderClass();
                     CallOfTheWild.HolyVindicator.createHolyVindicatorClass();
                     CallOfTheWild.DawnflowerAnchorite.createDawnflowerAnchoriteClass();
-                    
+
                     CallOfTheWild.Archetypes.Rake.create();
                     CallOfTheWild.Archetypes.OverwhelmingSoul.create();
                     CallOfTheWild.Archetypes.KineticChirurgeion.create();
-                    CallOfTheWild.Archetypes.ElementalAscetic.create();//should be done after Havocker witch archetype
+                    CallOfTheWild.Archetypes.ElementalAscetic.create(); //should be done after Havocker witch archetype
                     CallOfTheWild.Archetypes.SacredServant.create();
                     CallOfTheWild.Archetypes.MonkOfTheMantis.create();
                     CallOfTheWild.Archetypes.BeastkinBerserker.create();
@@ -430,7 +454,7 @@ namespace CallOfTheWild
                     CallOfTheWild.CleanUp.run();
                     CallOfTheWild.DismissSpells.Dismiss.create();
                     CallOfTheWild.Rebalance.fixTristianAngelBuff();
-                    
+
                     CallOfTheWild.SaveGameFix.FixMissingAssets();
                     CallOfTheWild.AiFix.load();
 
@@ -444,14 +468,23 @@ namespace CallOfTheWild
                         CallOfTheWild.Rebalance.fixCompanionsBase();
                     }
 
-                    Main.logger.Log("metamagic_for_spontaneous_spell_conversion:" + settings.metamagic_for_spontaneous_spell_conversion.ToString());
-                    Main.logger.Log("one_sneak_attack_per_target_per_spell:" + settings.one_sneak_attack_per_target_per_spell.ToString());
+                    Main.logger.Log(
+                        "metamagic_for_spontaneous_spell_conversion:"
+                            + settings.metamagic_for_spontaneous_spell_conversion.ToString()
+                    );
+                    Main.logger.Log(
+                        "one_sneak_attack_per_target_per_spell:"
+                            + settings.one_sneak_attack_per_target_per_spell.ToString()
+                    );
 
 #if DEBUG
-                    string guid_file_name = @"C:\Repositories\KingmakerRebalance\CallOfTheWild\blueprints.txt";
+                    string guid_file_name =
+                        @"C:\Repositories\KingmakerRebalance\CallOfTheWild\blueprints.txt";
                     CallOfTheWild.Helpers.GuidStorage.dump(guid_file_name);
 #endif
-                    CallOfTheWild.Helpers.GuidStorage.dump(UnityModManager.modsPath + @"/CallOfTheWild/loaded_blueprints.txt");
+                    CallOfTheWild.Helpers.GuidStorage.dump(
+                        UnityModManager.modsPath + @"/CallOfTheWild/loaded_blueprints.txt"
+                    );
                 }
                 catch (Exception ex)
                 {
@@ -464,6 +497,108 @@ namespace CallOfTheWild
         {
             logger?.Log(message);
             return new InvalidOperationException(message);
+        }
+
+        [HarmonyPatch(
+            typeof(UnitAnimationActionVariantIdle),
+            "OnStart",
+            new Type[] { typeof(UnitAnimationActionHandle) }
+        )]
+        internal class UnitAnimationActionVariantIdle_OnStart
+        {
+            private static BlueprintCharacterClass ranger =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "cda0615668a6df14eb36ba19ee881af6"
+                );
+            private static BlueprintCharacterClass slayer =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "c75e0971973957d4dbad24bc7957e4fb"
+                );
+            private static BlueprintCharacterClass stalker =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "9e8824662f4a42f28922f58f6dcf6c17"
+                );
+            private static BlueprintCharacterClass paladin =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "bfa11238e7ae3544bbeb4d0b92e897ec"
+                );
+            private static BlueprintCharacterClass bastard =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "4cd171570026456797e2a2f4fd374197"
+                );
+            private static BlueprintCharacterClass warpriest =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "e119d84528144a7797ad34fd718b1f87"
+                );
+            private static BlueprintCharacterClass cleric =
+                ResourcesLibrary.TryGetBlueprint<BlueprintCharacterClass>(
+                    "67819271767a9dd4fbfd4ae700befea0"
+                );
+            private static Random random = new Random();
+
+            private static void Prefix(
+                UnitAnimationManager __instance,
+                UnitAnimationActionHandle handle
+            )
+            {
+                BlueprintCharacterClass blueprintCharacterClass =
+                    handle.UnitClass
+                    ?? handle.Unit?.EntityData?.Descriptor?.Progression?.GetMaxClass();
+                var name = handle.Unit?.EntityData.CharacterName;
+                if (name.Contains("Darrant") || blueprintCharacterClass == stalker)
+                {
+                    if (random.Next(2) == 0)
+                    {
+                        handle.UnitClass = ranger;
+                    }
+                    else
+                    {
+                        handle.UnitClass = slayer;
+                    }
+                }
+                else if (blueprintCharacterClass == bastard)
+                {
+                    handle.UnitClass = paladin;
+                }
+                else if (blueprintCharacterClass == warpriest)
+                {
+                    handle.UnitClass = cleric;
+                }
+            }
+
+            private static void Postfix(
+                UnitAnimationManager __instance,
+                UnitAnimationActionHandle handle
+            )
+            {
+                var name = handle.Unit?.EntityData.CharacterName;
+                if (name.Contains("Darrant"))
+                {
+                    handle.UnitClass =
+                        handle.Unit?.EntityData?.Descriptor?.Progression?.GetMaxClass();
+                }
+                else if (
+                    handle.UnitClass == ranger
+                    && handle.Unit?.EntityData?.Descriptor?.Progression?.GetMaxClass() == stalker
+                )
+                {
+                    handle.UnitClass = stalker;
+                }
+                else if (
+                    handle.UnitClass == paladin
+                    && handle.Unit?.EntityData?.Descriptor?.Progression?.GetMaxClass() == bastard
+                )
+                {
+                    handle.UnitClass = bastard;
+                }
+                else if (
+                    handle.UnitClass == cleric
+                    && handle.Unit?.EntityData?.Descriptor?.Progression?.GetMaxClass() == warpriest
+                )
+                {
+                    handle.UnitClass = warpriest;
+                }
+            }
         }
     }
 }

@@ -30,7 +30,9 @@ namespace CallOfTheWild
             var type = c.GetType();
             if (IsStatefulComponent(type))
             {
-                statefulComponentMessage.AppendLine($"Warning: in object {obj.name}, stateful {type.Name} should be named.");
+                statefulComponentMessage.AppendLine(
+                    $"Warning: in object {obj.name}, stateful {type.Name} should be named."
+                );
             }
 #endif
         }
@@ -41,7 +43,8 @@ namespace CallOfTheWild
             var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             // If this doesn't match the previous baseline (or it didn't exist), write the current state.
-            if (MatchesBaseline(Path.Combine(dir, "baseline_assets.txt"))) return;
+            if (MatchesBaseline(Path.Combine(dir, "baseline_assets.txt")))
+                return;
 
             WriteAssetInfo(Path.Combine(dir, "current_assets.txt"), GetCurrentAssetInfo());
 
@@ -55,7 +58,8 @@ namespace CallOfTheWild
             var assets = new SortedDictionary<String, SortedSet<String>>();
             foreach (var asset in ExtensionMethods.newAssets)
             {
-                if (asset is BlueprintPortrait) continue;
+                if (asset is BlueprintPortrait)
+                    continue;
 
                 var components = new SortedSet<String>();
                 foreach (var component in asset.ComponentsArray)
@@ -71,9 +75,13 @@ namespace CallOfTheWild
                     }
                     if (string.IsNullOrEmpty(component.name))
                     {
-                        Log.Write($"Warning: component {component.GetType().Name} of {asset.name} is missing a name");
+                        Log.Write(
+                            $"Warning: component {component.GetType().Name} of {asset.name} is missing a name"
+                        );
                     }
-                    components.Add(component.name + (fields.Count == 0 ? "" : ";" + string.Join(";", fields)));
+                    components.Add(
+                        component.name + (fields.Count == 0 ? "" : ";" + string.Join(";", fields))
+                    );
                 }
                 // Note: the name of the asset does not appear to be used for compatibility, but
                 // it makes it much easier to see what's going on in the baseline file.
@@ -94,13 +102,28 @@ namespace CallOfTheWild
             var current = GetCurrentAssetInfo();
 
             // Check that all baseline assets are still found.
-            var success = DiffAndReportAssets(baseline, current, "Missing", $"Error: missing assets from baseline {baselinePath}");
+            var success = DiffAndReportAssets(
+                baseline,
+                current,
+                "Missing",
+                $"Error: missing assets from baseline {baselinePath}"
+            );
             // Also report new components, to indicate the baseline needs to be updated.
-            var success2 = DiffAndReportAssets(current, baseline, "New", $"Info: new assets, baseline needs to be updated at {baselinePath}");
+            var success2 = DiffAndReportAssets(
+                current,
+                baseline,
+                "New",
+                $"Info: new assets, baseline needs to be updated at {baselinePath}"
+            );
             return success && success2;
         }
 
-        static bool DiffAndReportAssets(SortedDictionary<String, SortedSet<String>> baseline, SortedDictionary<String, SortedSet<String>> current, string missingOrNew, string introMessage)
+        static bool DiffAndReportAssets(
+            SortedDictionary<String, SortedSet<String>> baseline,
+            SortedDictionary<String, SortedSet<String>> current,
+            string missingOrNew,
+            string introMessage
+        )
         {
             var missingAssets = new List<String>();
             var missingComponents = new List<String>();
@@ -112,7 +135,9 @@ namespace CallOfTheWild
                     missingAssets.Add(id);
                     continue;
                 }
-                missingComponents.AddRange(baseline[id].Where(b => !currentAsset.Contains(b)).Select(c => $"{id}::{c}"));
+                missingComponents.AddRange(
+                    baseline[id].Where(b => !currentAsset.Contains(b)).Select(c => $"{id}::{c}")
+                );
             }
             if (missingAssets.Count > 0 || missingComponents.Count > 0)
             {
@@ -127,13 +152,17 @@ namespace CallOfTheWild
             return true;
         }
 
-        static void WriteAssetInfo(string assetPath, SortedDictionary<String, SortedSet<String>> info)
+        static void WriteAssetInfo(
+            string assetPath,
+            SortedDictionary<String, SortedSet<String>> info
+        )
         {
             var lines = new List<String>();
             foreach (var pair in info)
             {
                 lines.Add(pair.Key);
-                foreach (var item in pair.Value) lines.Add($"  {item}");
+                foreach (var item in pair.Value)
+                    lines.Add($"  {item}");
             }
             File.WriteAllLines(assetPath, lines);
         }
@@ -159,20 +188,30 @@ namespace CallOfTheWild
         internal static List<FieldInfo> GetStatefulComponentFields(Type type)
         {
             List<FieldInfo> fields;
-            if (statefulComponentFields.TryGetValue(type, out fields)) return fields;
+            if (statefulComponentFields.TryGetValue(type, out fields))
+                return fields;
 
             fields = new List<FieldInfo>();
             for (var t = type; t != null; t = t.BaseType)
             {
-                fields.AddRange(t.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).Where(
-                    f => f.CustomAttributes.Any(a => a.AttributeType == typeof(JsonPropertyAttribute) ||
-                        a.AttributeType == typeof(SerializableAttribute))));
+                fields.AddRange(
+                    t.GetFields(
+                            BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance
+                        )
+                        .Where(f =>
+                            f.CustomAttributes.Any(a =>
+                                a.AttributeType == typeof(JsonPropertyAttribute)
+                                || a.AttributeType == typeof(SerializableAttribute)
+                            )
+                        )
+                );
             }
             statefulComponentFields.Add(type, fields);
             return fields;
         }
 
-        static readonly Dictionary<Type, List<FieldInfo>> statefulComponentFields = new Dictionary<Type, List<FieldInfo>>();
+        static readonly Dictionary<Type, List<FieldInfo>> statefulComponentFields =
+            new Dictionary<Type, List<FieldInfo>>();
 
         static readonly StringBuilder statefulComponentMessage = new StringBuilder();
 #endif

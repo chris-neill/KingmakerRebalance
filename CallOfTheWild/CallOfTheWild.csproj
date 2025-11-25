@@ -230,6 +230,7 @@
     <Compile Include="Classes\Psychic.cs" />
     <Compile Include="Classes\Antipaladin.cs" />
     <Compile Include="Classes\Spiritualist.cs" />
+    <Compile Include="Classes\Stalker.cs" />
     <Compile Include="Classes\Summoner.cs" />
     <Compile Include="Archetypes\UndeadLord.cs" />
     <Compile Include="ClassToProgression.cs" />

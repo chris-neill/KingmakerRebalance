@@ -1,4 +1,9 @@
-﻿using Kingmaker.Blueprints;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
 using Kingmaker.Blueprints.Classes.Selection;
@@ -6,11 +11,6 @@ using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Root.Strings;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Class.LevelUp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CallOfTheWild.PrerequisiteMechanics
 {
@@ -20,9 +20,10 @@ namespace CallOfTheWild.PrerequisiteMechanics
         public BlueprintCharacterClass CharacterClass;
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
             return unit.Progression.GetClassLevel(this.CharacterClass) < 1;
         }
@@ -40,18 +41,28 @@ namespace CallOfTheWild.PrerequisiteMechanics
         public BlueprintParametrizedFeature dependent_feature;
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
-            if (selectionState != (FeatureSelectionState)null && selectionState.IsSelectedInChildren((IFeatureSelectionItem)this.base_feature))
+            if (
+                selectionState != (FeatureSelectionState)null
+                && selectionState.IsSelectedInChildren((IFeatureSelectionItem)this.base_feature)
+            )
                 return false;
-            return unit.Progression.Features.Enumerable.Where(p => p.Blueprint == this.base_feature).Any(this.CheckFeature);
+            return unit
+                .Progression.Features.Enumerable.Where(p => p.Blueprint == this.base_feature)
+                .Any(this.CheckFeature);
         }
 
         public bool CheckFeature(Kingmaker.UnitLogic.Feature feature)
         {
-            return feature.Owner.Progression.Features.Enumerable.Where(p => p.Blueprint == this.dependent_feature).Any(f => f.Param == feature.Param);
+            return feature
+                .Owner.Progression.Features.Enumerable.Where(p =>
+                    p.Blueprint == this.dependent_feature
+                )
+                .Any(f => f.Param == feature.Param);
         }
 
         public override string GetUIText()
@@ -62,15 +73,18 @@ namespace CallOfTheWild.PrerequisiteMechanics
 
     [AllowMultipleComponents]
     public class PrerequsiteOrAlternative : Prerequisite
-    {        
-        public Prerequisite base_prerequsite, alternative_prerequsite;
+    {
+        public Prerequisite base_prerequsite,
+            alternative_prerequsite;
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
-            return this.base_prerequsite.Check(selectionState, unit, state) || this.alternative_prerequsite.Check(selectionState, unit, state);
+            return this.base_prerequsite.Check(selectionState, unit, state)
+                || this.alternative_prerequsite.Check(selectionState, unit, state);
         }
 
         public override string GetUIText()
@@ -79,20 +93,20 @@ namespace CallOfTheWild.PrerequisiteMechanics
         }
     }
 
-
     [AllowMultipleComponents]
     public class CompoundPrerequisite : Prerequisite
     {
         public Prerequisite prerequisite1;
         public Prerequisite prerequisite2;
-        
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
-            return this.prerequisite1.Check(selectionState, unit, state) && this.prerequisite2.Check(selectionState, unit, state);
+            return this.prerequisite1.Check(selectionState, unit, state)
+                && this.prerequisite2.Check(selectionState, unit, state);
         }
 
         public override string GetUIText()
@@ -101,7 +115,6 @@ namespace CallOfTheWild.PrerequisiteMechanics
         }
     }
 
-
     [AllowMultipleComponents]
     public class CompoundPrerequisites : Prerequisite
     {
@@ -109,9 +122,10 @@ namespace CallOfTheWild.PrerequisiteMechanics
         public bool any = false;
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
             foreach (var p in prerequisites)
             {
@@ -132,7 +146,7 @@ namespace CallOfTheWild.PrerequisiteMechanics
 
         public override string GetUIText()
         {
-            var text = $"Meets {(any ? "one of " :"")}the following requirements::";
+            var text = $"Meets {(any ? "one of " : "")}the following requirements::";
             for (int i = 0; i < prerequisites.Length; i++)
             {
                 text += "\n" + prerequisites[i].GetUIText();
@@ -146,9 +160,10 @@ namespace CallOfTheWild.PrerequisiteMechanics
         public BlueprintRace race;
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
             return race == unit.Progression.Race;
         }
@@ -165,9 +180,10 @@ namespace CallOfTheWild.PrerequisiteMechanics
         public BlueprintFeature[] Features;
 
         public override bool Check(
-          FeatureSelectionState selectionState,
-          UnitDescriptor unit,
-          LevelUpState state)
+            FeatureSelectionState selectionState,
+            UnitDescriptor unit,
+            LevelUpState state
+        )
         {
             foreach (var f in Features)
             {
@@ -186,7 +202,9 @@ namespace CallOfTheWild.PrerequisiteMechanics
         public override string GetUIText()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(string.Format("{0}:\n", (object)UIStrings.Instance.Tooltips.NoFeature));
+            stringBuilder.Append(
+                string.Format("{0}:\n", (object)UIStrings.Instance.Tooltips.NoFeature)
+            );
             for (int index = 0; index < this.Features.Length; ++index)
             {
                 stringBuilder.Append(this.Features[index].Name);
